@@ -17,6 +17,8 @@
 using namespace std::literals::string_literals;
 
 ServerApplication::ServerApplication(int argc, char **argv) : gk::CoreApplication(argc, argv) {
+	srand(1337);
+
 	m_loadSDL = false;
 }
 
