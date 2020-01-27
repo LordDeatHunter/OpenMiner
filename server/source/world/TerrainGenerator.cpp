@@ -24,9 +24,9 @@
 void TerrainGenerator::generate(ServerChunk &chunk) const {
 	// lightTestGeneration(chunk);
 	// basicGeneration(chunk);
-	testCraftGeneration(chunk);
+	// testCraftGeneration(chunk);
 	// simplexGeneration(chunk);
-	// fastNoiseGeneration(chunk);
+	fastNoiseGeneration(chunk);
 }
 
 void TerrainGenerator::lightTestGeneration(ServerChunk &chunk) const {
@@ -254,6 +254,16 @@ void TerrainGenerator::fastNoiseGeneration(ServerChunk &chunk) const {
 	noise.SetFrequency(1);
 	noise.SetFractalOctaves(4);
 
+	FastNoise caveRigid;
+	caveRigid.SetNoiseType(FastNoise::NoiseType::SimplexFractal);
+	caveRigid.SetFractalType(FastNoise::FractalType::RigidMulti);
+	caveRigid.SetFractalOctaves(1);
+	caveRigid.SetFrequency(1 / 64.0f);
+
+	FastNoise caveSimplex;
+	caveSimplex.SetNoiseType(FastNoise::NoiseType::Simplex);
+	caveSimplex.SetFrequency(1 / 256.0f);
+
 	srand(1337);
 	Chunk *topChunk = chunk.getSurroundingChunk(Chunk::Top);
 	for(int z = 0 ; z < CHUNK_DEPTH ; z++) {
@@ -261,7 +271,7 @@ void TerrainGenerator::fastNoiseGeneration(ServerChunk &chunk) const {
 			// Land height
 			float d = 256.0f;
 			float n = noise.GetNoise((x + chunk.x() * CHUNK_WIDTH) / d, (z + chunk.z() * CHUNK_DEPTH) / d);
-			float h = 10 + n * 20;
+			float h = 10 + n * 20 + 60;
 
 			// Land blocks
 			for(int y = 0 ; y < CHUNK_HEIGHT ; y++) {
@@ -271,29 +281,29 @@ void TerrainGenerator::fastNoiseGeneration(ServerChunk &chunk) const {
 					if(y + chunk.y() * CHUNK_HEIGHT < SEALEVEL) {
 						chunk.setBlockRaw(x, y, z, BlockType::Water);
 					}
-					// Otherwise we are in the air, so try to make a tree
-					else if(chunk.getBlock(x, y - 1, z) == BlockType::Grass && (rand() % 256) == 0 && n < 1) {
-						// Trunk
-						h = (rand() & 0x3) + 3;
-						for(int i = 0 ; i < h ; i++) {
-							chunk.setBlockRaw(x, y + i, z, BlockType::Wood);
-						}
-
-						// Leaves
-						for(int ix = -3 ; ix <= 3 ; ix++) {
-							for(int iy = -3 ; iy <= 3 ; iy++) {
-								for(int iz = -3 ; iz <= 3 ; iz++) {
-									if(ix * ix + iy * iy + iz * iz < 8 + (rand() & 1) && !chunk.getBlock(x + ix, y + h + iy, z + iz)) {
-										chunk.setBlockRaw(x + ix, y + h + iy, z + iz, BlockType::Leaves);
-									}
-								}
-							}
-						}
-					}
-					// Or a flower
-					else if(chunk.getBlock(x, y - 1, z) == BlockType::Grass && (rand() & 0xff) == 0) {
-						chunk.setBlockRaw(x, y, z, BlockType::Flower);
-					}
+					// // Otherwise we are in the air, so try to make a tree
+					// else if(chunk.getBlock(x, y - 1, z) == BlockType::Grass && (rand() % 256) == 0 && n < 1) {
+					// 	// Trunk
+					// 	h = (rand() & 0x3) + 3;
+					// 	for(int i = 0 ; i < h ; i++) {
+					// 		chunk.setBlockRaw(x, y + i, z, BlockType::Wood);
+					// 	}
+                    //
+					// 	// Leaves
+					// 	for(int ix = -3 ; ix <= 3 ; ix++) {
+					// 		for(int iy = -3 ; iy <= 3 ; iy++) {
+					// 			for(int iz = -3 ; iz <= 3 ; iz++) {
+					// 				if(ix * ix + iy * iy + iz * iz < 8 + (rand() & 1) && !chunk.getBlock(x + ix, y + h + iy, z + iz)) {
+					// 					chunk.setBlockRaw(x + ix, y + h + iy, z + iz, BlockType::Leaves);
+					// 				}
+					// 			}
+					// 		}
+					// 	}
+					// }
+					// // Or a flower
+					// else if(chunk.getBlock(x, y - 1, z) == BlockType::Grass && (rand() & 0xff) == 0) {
+					// 	chunk.setBlockRaw(x, y, z, BlockType::Flower);
+					// }
 					// If we are on the top block of the chunk, add sunlight
 					else if (y == CHUNK_HEIGHT - 1) {
 						chunk.lightmap().addSunlight(x, y, z, 15);
@@ -308,6 +318,23 @@ void TerrainGenerator::fastNoiseGeneration(ServerChunk &chunk) const {
 						chunk.setBlockRaw(x, y, z, BlockType::Dirt);
 					else
 						chunk.setBlockRaw(x, y, z, BlockType::Stone);
+
+					static const int maxCaveSize = 8;
+					static const int maxCaveY = 60 - maxCaveSize;
+
+					float simplex = (caveSimplex.GetNoise(x + chunk.x() * CHUNK_WIDTH, z + chunk.z() * CHUNK_DEPTH) * 0.5f + 0.5f) * maxCaveY;
+
+					float rigid = caveRigid.GetNoise(x + chunk.x() * CHUNK_WIDTH, z + chunk.z() * CHUNK_DEPTH);
+					if (y + chunk.y() * CHUNK_HEIGHT > simplex && y + chunk.y() * CHUNK_HEIGHT < simplex + rigid * maxCaveSize && rigid > 0.8)
+						chunk.setBlockRaw(x, y, z, BlockType::Air);
+
+					// if (y + chunk.y() * CHUNK_HEIGHT > simplex && y + chunk.y() * CHUNK_HEIGHT < simplex + rigid)
+					// 	chunk.setBlockRaw(x, y, z, BlockType::Air);
+
+					// float rigid = pow(caveRigid.GetNoise(x + chunk.x() * CHUNK_WIDTH, z + chunk.z() * CHUNK_DEPTH),50.f) * maxCaveSize;
+					// rigid = std::max(rigid - 2, 0.f);
+					// if (y + chunk.y() * CHUNK_HEIGHT > simplex && y + chunk.y() * CHUNK_HEIGHT < simplex + rigid)
+					// 	chunk.setBlockRaw(x, y, z, BlockType::Air);
 				}
 
 				if (topChunk && topChunk->isInitialized()) {

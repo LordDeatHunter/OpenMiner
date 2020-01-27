@@ -21,8 +21,8 @@ float SCREEN_HEIGHT = 1050;
 int GUI_SCALE = 3;
 
 // Gameplay
-bool Config::isFlyModeEnabled = false;
-bool Config::isNoClipEnabled = false;
+bool Config::isFlyModeEnabled = true;
+bool Config::isNoClipEnabled = true;
 
 // Graphics
 u16 Config::renderDistance = 8;

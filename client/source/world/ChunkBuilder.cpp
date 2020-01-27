@@ -178,7 +178,7 @@ inline void ChunkBuilder::addFace(u8 x, u8 y, u8 z, u8 i, const ClientChunk &chu
 
 		// FIXME: Duplicated below
 		if (Config::isSunSmoothLightingEnabled)
-			vertices[j].lightValue[0] = getLightForVertex(Light::Sun, x, y, z, i, j, normal, chunk);
+			vertices[j].lightValue[0] = 15; // getLightForVertex(Light::Sun, x, y, z, i, j, normal, chunk);
 		else
 			vertices[j].lightValue[0] = chunk.lightmap().getSunlight(
 					surroundingBlockPos[0], surroundingBlockPos[1], surroundingBlockPos[2]);
@@ -191,10 +191,10 @@ inline void ChunkBuilder::addFace(u8 x, u8 y, u8 z, u8 i, const ClientChunk &chu
 			vertices[j].lightValue[1] = chunk.lightmap().getTorchlight(
 				surroundingBlockPos[0], surroundingBlockPos[1], surroundingBlockPos[2]);
 
-		if (Config::isAmbientOcclusionEnabled)
+		// if (Config::isAmbientOcclusionEnabled)
 			vertices[j].ambientOcclusion = getAmbientOcclusion(x, y, z, i, j, chunk);
-		else
-			vertices[j].ambientOcclusion = 5;
+		// else
+		// 	vertices[j].ambientOcclusion = 5;
 
 		vertices[j].blockType = block->id();
 	}
