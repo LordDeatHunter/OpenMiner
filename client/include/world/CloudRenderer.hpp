@@ -20,59 +20,28 @@
  *
  * =====================================================================================
  */
-#ifndef GAMESTATE_HPP_
-#define GAMESTATE_HPP_
+#ifndef CLOUDRENDERER_HPP_
+#define CLOUDRENDERER_HPP_
 
-#include <glm/glm.hpp>
+#include <gk/gl/Drawable.hpp>
+#include <gk/gl/Transformable.hpp>
+#include <gk/gl/VertexBuffer.hpp>
 
-#include <gk/core/ApplicationState.hpp>
-#include <gk/gl/RenderTarget.hpp>
-
-#include "Client.hpp"
-#include "ClientChunk.hpp"
-#include "ClientCommandHandler.hpp"
-#include "ClientPlayer.hpp"
-#include "ClientWorld.hpp"
-#include "CloudRenderer.hpp"
-#include "Config.hpp"
-#include "HUD.hpp"
-#include "PlayerBox.hpp"
-
-class TextureAtlas;
-
-class GameState : public gk::ApplicationState {
+class CloudRenderer : public gk::Drawable, public gk::Transformable {
 	public:
-		GameState(const std::string &host, int port);
-
-		void onEvent(const SDL_Event &event) override;
-
-		void update() override;
-
-		Client &client() { return m_client; }
+		void initCloudMap();
+		void initVertexBuffer();
 
 	private:
-		void initShaders();
-
 		void draw(gk::RenderTarget &target, gk::RenderStates states) const override;
 
-		gk::Shader m_shader;
+		gk::VertexBuffer m_vbo;
 
-		gk::Camera m_camera{70.0f, DIST_NEAR, DIST_FAR};
-		ClientPlayer m_player{m_camera};
+		static constexpr u16 CLOUD_MAP_SIZE = 256;
+		static constexpr u8 CLOUD_HEIGHT = 40;
 
-		Client m_client;
-
-		ClientWorld m_world;
-
-		std::unordered_map<u16, PlayerBox> m_playerBoxes;
-
-		ClientCommandHandler m_clientCommandHandler{m_client, m_world, m_player, m_playerBoxes};
-
-		HUD m_hud{m_player, m_world, m_clientCommandHandler};
-
-		TextureAtlas *m_textureAtlas = nullptr;
-
-		CloudRenderer m_cloudRenderer;
+		u8 m_cloudMap[CLOUD_MAP_SIZE][CLOUD_MAP_SIZE];
+		std::size_t m_verticesCount = 0;
 };
 
-#endif // GAMESTATE_HPP_
+#endif // CLOUDRENDERER_HPP_
